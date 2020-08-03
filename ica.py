@@ -14,6 +14,35 @@ root = tk.Tk()
 root.withdraw()
 
 
+def rename_segment_file(segment_name, scheme='DASS'):
+    if segment_name[0] != 'Q':
+        return segment_name
+
+    renamed_segment = ''
+    first_part = segment_name.split('_')[0]
+    second_part = segment_name.split('_')[1]
+    if scheme == 'DASS':
+        if first_part.endswith('B'):
+            number_1 = first_part[1:len(first_part)-1]
+            number_2 = second_part[1:]
+            renamed_segment = number_1+'_'+number_2+'R.fif'
+        else:
+            number_1 = first_part[1:]
+            number_2 = second_part[1:len(second_part)-1]
+            renamed_segment = number_1+'_'+number_2+'F.fif'
+
+    if scheme == 'SA':
+        number_1 = first_part[1:len(first_part)-2]
+        number_2 = second_part[1:len(second_part)-2]
+
+        if first_part.endswith('Bn'):
+            renamed_segment = number_1+'_'+number_2+'R.fif'
+        else:
+            renamed_segment = number_1+'_'+number_2+'F.fif'
+
+    return renamed_segment
+
+
 def perform_ica(data_folder, subject):
     data_raw_files = glob(join(data_folder, '*'))
 
@@ -21,7 +50,6 @@ def perform_ica(data_folder, subject):
         segment_name = data_raw_file.split('/')[-1]
 
         raw = mne.io.read_raw_fif(data_raw_file, preload=True)
-        raw.plot(title='Raw plot ('+segment_name+')', block=True)
 
         ica = ICA(n_components=32, random_state=97)
         ica.fit(raw)
@@ -42,6 +70,13 @@ def perform_ica(data_folder, subject):
         # Plotting reconstructed signal
         reconst_raw.plot(title='Reconstructed signal ('+segment_name+')',
                          block=True)
+
+        renaming_scheme = 'DASS'
+        if subject.upper().startswith('SA'):
+            renaming_scheme = 'SA'
+
+        segment_name = rename_segment_file(segment_name,
+                                           scheme=renaming_scheme)
 
         reconst_raw.save(join(reconstructed,
                               subject,
